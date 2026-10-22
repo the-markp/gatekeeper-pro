@@ -1,0 +1,6 @@
+{
+  "name": "Gatekeeper - License Plate Gate Access Control",
+  "description": "High-speed vehicle gate access scanner for Android: reads license plates, verifies against CSV database, displays registrant, classification, and student names with instant green/red gate status lights and security log history.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

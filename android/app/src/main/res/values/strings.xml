@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Gatekeeper</string>
+    <string name="default_server_url">http://10.0.2.2:3000</string>
+    <string name="dialog_server_title">Gatekeeper Server Endpoint</string>
+    <string name="dialog_server_message">Enter the IP or URL of your Dockerized Gatekeeper server:</string>
+    <string name="btn_connect">Connect</string>
+    <string name="btn_cancel">Cancel</string>
+    <string name="permission_camera_rationale">Gatekeeper requires camera access to scan vehicle license plates at the gate.</string>
+</resources>
