@@ -277,7 +277,18 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({
               className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg transition-all flex items-center gap-1.5"
             >
               <Upload className="w-4 h-4" />
-              <span>Upload CSV List</span>
+              <span>Upload CSV</span>
+            </button>
+
+            {/* Download Template button */}
+            <button
+              type="button"
+              onClick={handleDownloadTemplate}
+              className="px-3.5 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-cyan-300 font-semibold text-xs border border-zinc-700 transition-all flex items-center gap-1.5"
+              title="Download CSV Template with sample vehicles"
+            >
+              <Download className="w-4 h-4 text-cyan-400" />
+              <span>CSV Template</span>
             </button>
 
             {/* Add Record button */}
