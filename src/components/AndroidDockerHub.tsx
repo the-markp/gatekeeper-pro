@@ -168,6 +168,34 @@ CMD ["npx", "tsx", "server.ts"]`;
             </span>
           </div>
         </div>
+
+        {/* Standalone vs Server Architecture Comparison Callout */}
+        <div className="mt-4 p-4 rounded-2xl bg-black/60 border border-zinc-800 space-y-2">
+          <div className="flex items-center gap-2 text-xs font-bold text-white uppercase tracking-wider">
+            <Shield className="w-4 h-4 text-emerald-400" />
+            <span>Standalone Android vs. Server Mode: How Gatekeeper Works</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs pt-1">
+            <div className="p-3 rounded-xl bg-zinc-900/90 border border-emerald-500/30 space-y-1">
+              <span className="font-bold text-emerald-300 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                100% Standalone On-Device Mode (Zero Server)
+              </span>
+              <p className="text-zinc-300 text-[11px] leading-relaxed">
+                The Android app can run completely <strong>offline and standalone</strong>. The CSV registry, registrant lookup, student verification, green/red lights, audio chimes, and security log history run on-device. On-device OCR is handled by Android Google ML Kit with zero data or internet connection required.
+              </p>
+            </div>
+            <div className="p-3 rounded-xl bg-zinc-900/90 border border-cyan-500/30 space-y-1">
+              <span className="font-bold text-cyan-300 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-cyan-400" />
+                Server / Docker Hybrid Mode (Connected)
+              </span>
+              <p className="text-zinc-300 text-[11px] leading-relaxed">
+                When connecting multiple gate booths (Gate 1, Gate 2, Gate 3) to a central Docker container or Cloud server, Gatekeeper provides centralized logging and utilizes Gemini 3.8 Flash for difficult, dirty, or angled plates.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Tab 1: Docker Container View */}

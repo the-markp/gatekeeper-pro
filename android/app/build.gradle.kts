@@ -47,4 +47,7 @@ dependencies {
     implementation("androidx.camera:camera-camera2:1.4.1")
     implementation("androidx.camera:camera-lifecycle:1.4.1")
     implementation("androidx.camera:camera-view:1.4.1")
+
+    // On-Device Google ML Kit Text Recognition (Runs 100% offline, zero server required)
+    implementation("com.google.android.gms:play-services-mlkit-text-recognition:19.0.1")
 }
