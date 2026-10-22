@@ -9,16 +9,12 @@ android {
 
     defaultConfig {
         applicationId = "com.gatekeeper.app"
-        minSdk = 26
-        targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        minSdk = 24
+        targetSdk = 34
+        versionCode = 2
+        versionName = "1.0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-        ndk {
-            abiFilters += setOf("arm64-v8a", "armeabi-v7a", "x86_64", "x86")
-        }
     }
 
     buildTypes {
@@ -64,6 +60,6 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:1.4.1")
     implementation("androidx.camera:camera-view:1.4.1")
 
-    // On-Device Google ML Kit Text Recognition (Runs 100% offline, zero server required)
-    implementation("com.google.android.gms:play-services-mlkit-text-recognition:19.0.1")
+    // On-Device Google ML Kit Text Recognition (Bundled model, works on all devices without Play Services)
+    implementation("com.google.mlkit:text-recognition:16.0.1")
 }
