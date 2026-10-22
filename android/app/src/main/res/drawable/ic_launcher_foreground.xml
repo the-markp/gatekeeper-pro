@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:scaleX="0.65"
+        android:scaleY="0.65"
+        android:translateX="18.9"
+        android:translateY="18.9">
+        <!-- Gate Shield Outline -->
+        <path
+            android:fillColor="#10b981"
+            android:strokeColor="#059669"
+            android:strokeWidth="3"
+            android:pathData="M54,18 L82,28 C82,56 54,82 54,88 C54,82 26,56 26,28 Z" />
+        <!-- White Checkmark / Access Pass -->
+        <path
+            android:strokeColor="#ffffff"
+            android:strokeWidth="5"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:pathData="M41,51 L50,60 L68,41" />
+        <!-- Status Indicator Dots -->
+        <path
+            android:fillColor="#f43f5e"
+            android:pathData="M44,74m-3,0a3,3 0,1 1,6 0a3,3 0,1 1,-6 0" />
+        <path
+            android:fillColor="#10b981"
+            android:pathData="M64,74m-3,0a3,3 0,1 1,6 0a3,3 0,1 1,-6 0" />
+    </group>
+</vector>
