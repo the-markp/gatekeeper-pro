@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="128" fill="#09090b"/>
+  <circle cx="256" cy="256" r="210" fill="#18181b" stroke="#27272a" stroke-width="8"/>
+  <!-- Outer Glow Ring -->
+  <circle cx="256" cy="256" r="185" fill="none" stroke="#10b981" stroke-width="6" stroke-opacity="0.5"/>
+  <!-- Shield Icon -->
+  <path d="M256 90 L390 140 C390 270 256 390 256 422 C256 390 122 270 122 140 Z" fill="url(#shieldGrad)" stroke="#10b981" stroke-width="12"/>
+  <!-- Checkmark / Barrier Bar -->
+  <path d="M195 245 L240 290 L325 195" fill="none" stroke="#ffffff" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Traffic Signal Dots -->
+  <circle cx="210" cy="355" r="14" fill="#f43f5e"/>
+  <circle cx="256" cy="355" r="14" fill="#f59e0b"/>
+  <circle cx="302" cy="355" r="14" fill="#10b981"/>
+  <defs>
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#059669"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+  </defs>
+</svg>
