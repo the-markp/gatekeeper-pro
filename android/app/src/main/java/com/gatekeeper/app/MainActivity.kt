@@ -11,7 +11,6 @@ import android.os.Bundle
 import android.util.Log
 import android.view.GestureDetector
 import android.view.MotionEvent
-import android.view.View
 import android.webkit.ConsoleMessage
 import android.webkit.PermissionRequest
 import android.webkit.ValueCallback
@@ -28,6 +27,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.webkit.WebViewAssetLoader
+import java.io.InputStream
 
 class MainActivity : AppCompatActivity() {
 
@@ -37,12 +37,11 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val TAG = "Gatekeeper"
+        private const val LOCAL_HOST = "appassets.androidplatform.net"
         private const val LOCAL_ASSET_URL = "https://appassets.androidplatform.net/assets/index.html"
-        private const val FILE_ASSET_URL = "file:///android_asset/index.html"
         private const val PREFS_NAME = "GatekeeperPrefs"
         private const val KEY_SERVER_URL = "server_url"
         private const val KEY_USE_REMOTE = "use_remote_server"
-        // Live cloud endpoint for Gatekeeper deployment
         private const val DEFAULT_REMOTE_URL = "https://ais-dev-ldedzlya2ybk2o4dyiolzx-117264682210.us-east1.run.app"
     }
 
@@ -53,7 +52,7 @@ class MainActivity : AppCompatActivity() {
             } else {
                 Toast.makeText(
                     this,
-                    "Camera permission is required to scan license plates.",
+                    "Camera permission required for plate scanning. You can still use manual plate entry.",
                     Toast.LENGTH_LONG
                 ).show()
             }
@@ -70,29 +69,33 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Initialize WebViewAssetLoader for local virtual HTTPS serving
-        assetLoader = WebViewAssetLoader.Builder()
-            .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this))
-            .build()
+        try {
+            // Paint window background dark immediately
+            window.decorView.setBackgroundColor(Color.parseColor("#09090b"))
 
-        webView = WebView(this)
-        
-        // Critical: Paint dark background immediately so there is never a white flash
-        webView.setBackgroundColor(Color.parseColor("#09090b"))
-        window.decorView.setBackgroundColor(Color.parseColor("#09090b"))
+            // Initialize fallback WebViewAssetLoader
+            assetLoader = WebViewAssetLoader.Builder()
+                .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this))
+                .build()
 
-        setContentView(webView)
+            webView = WebView(this)
+            webView.setBackgroundColor(Color.parseColor("#09090b"))
+            setContentView(webView)
 
-        setupWebView()
+            setupWebView()
 
-        // Enable Chrome DevTools remote debugging on physical devices and emulators
-        WebView.setWebContentsDebuggingEnabled(true)
+            // Enable DevTools remote debugging
+            WebView.setWebContentsDebuggingEnabled(true)
 
-        // Check camera permission, then load
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            requestCameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-        } else {
-            loadGatekeeper()
+            // Camera permission check
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                requestCameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+            } else {
+                loadGatekeeper()
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Fatal startup exception in onCreate", e)
+            Toast.makeText(this, "Startup error: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -103,26 +106,29 @@ class MainActivity : AppCompatActivity() {
         settings.domStorageEnabled = true
         settings.databaseEnabled = true
         settings.mediaPlaybackRequiresUserGesture = false
-        
-        // Allow local file and asset access
+
         settings.allowFileAccess = true
         settings.allowContentAccess = true
         @Suppress("DEPRECATION")
         settings.allowFileAccessFromFileURLs = true
         @Suppress("DEPRECATION")
         settings.allowUniversalAccessFromFileURLs = true
-        
+
         settings.cacheMode = WebSettings.LOAD_DEFAULT
         settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
         settings.useWideViewPort = true
         settings.loadWithOverviewMode = true
 
-        // Hardware acceleration for video viewfinder
-        webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
+        // Hardware acceleration
+        webView.setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null)
 
-        // Inject Native Android Bridge
-        val bridge = GatekeeperNativeBridge(this)
-        webView.addJavascriptInterface(bridge, "GatekeeperNative")
+        // Native Android Bridge
+        try {
+            val bridge = GatekeeperNativeBridge(this)
+            webView.addJavascriptInterface(bridge, "GatekeeperNative")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to initialize GatekeeperNativeBridge", e)
+        }
 
         webView.webChromeClient = object : WebChromeClient() {
             override fun onPermissionRequest(request: PermissionRequest?) {
@@ -155,7 +161,7 @@ class MainActivity : AppCompatActivity() {
 
             override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
                 consoleMessage?.let {
-                    Log.d(TAG, "[WebConsole] ${it.message()} (${it.sourceId()}:${it.lineNumber()})")
+                    Log.d(TAG, "[WebView Console] ${it.message()} (${it.sourceId()}:${it.lineNumber()})")
                 }
                 return true
             }
@@ -167,12 +173,26 @@ class MainActivity : AppCompatActivity() {
                 request: WebResourceRequest?
             ): WebResourceResponse? {
                 val url = request?.url ?: return null
-                return assetLoader.shouldInterceptRequest(url)
+
+                // If requesting from our virtual local origin, serve directly from APK assets with CORS headers
+                if (url.host == LOCAL_HOST || url.scheme == "file") {
+                    val customResponse = handleAssetRequest(url)
+                    if (customResponse != null) {
+                        return customResponse
+                    }
+                    // Fallback to assetLoader
+                    val assetResponse = assetLoader.shouldInterceptRequest(url)
+                    if (assetResponse != null) {
+                        injectCorsHeaders(assetResponse)
+                        return assetResponse
+                    }
+                }
+                return null
             }
 
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
-                Log.i(TAG, "Page loaded successfully: $url")
+                Log.i(TAG, "Gatekeeper page finished loading: $url")
             }
 
             override fun onReceivedError(
@@ -182,17 +202,17 @@ class MainActivity : AppCompatActivity() {
                 failingUrl: String?
             ) {
                 super.onReceivedError(view, errorCode, description, failingUrl)
-                Log.w(TAG, "Failed loading $failingUrl (code $errorCode): $description")
+                Log.w(TAG, "WebView error ($errorCode) loading $failingUrl: $description")
 
-                // If remote server failed, fallback to local assets
-                if (failingUrl != null && !failingUrl.startsWith("https://appassets") && !failingUrl.startsWith("file://")) {
-                    Log.i(TAG, "Server connection failed. Falling back to local offline assets.")
+                // If remote server failed, switch to local assets
+                if (failingUrl != null && !failingUrl.startsWith("https://$LOCAL_HOST") && !failingUrl.startsWith("file://")) {
+                    Log.i(TAG, "Remote connection failed, loading local bundled assets.")
                     loadLocalAssets()
                 }
             }
         }
 
-        // Add long press / triple tap detector to open server settings if needed
+        // Long press gesture on screen to open connection dialog
         val gestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
             override fun onLongPress(e: MotionEvent) {
                 showConnectionSettingsDialog()
@@ -205,13 +225,69 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Directly serves APK assets with guaranteed MIME types and CORS Access-Control-Allow-Origin: *
+     * This prevents any ES Module <script type="module" crossorigin> blocking by Android Chromium WebView!
+     */
+    private fun handleAssetRequest(url: Uri): WebResourceResponse? {
+        val path = url.path?.removePrefix("/") ?: return null
+
+        val candidatePaths = mutableListOf<String>()
+        candidatePaths.add(path)
+        if (path.startsWith("assets/")) {
+            candidatePaths.add(path.removePrefix("assets/"))
+            candidatePaths.add("assets/" + path.removePrefix("assets/"))
+        } else {
+            candidatePaths.add("assets/$path")
+        }
+        candidatePaths.add("www/$path")
+
+        for (candidate in candidatePaths) {
+            try {
+                val inputStream: InputStream = assets.open(candidate)
+                val mimeType = getMimeType(candidate)
+                val headers = mapOf(
+                    "Access-Control-Allow-Origin" to "*",
+                    "Access-Control-Allow-Methods" to "GET, OPTIONS, HEAD",
+                    "Access-Control-Allow-Headers" to "*"
+                )
+                return WebResourceResponse(mimeType, "UTF-8", 200, "OK", headers, inputStream)
+            } catch (_: Exception) {
+                // Try next candidate
+            }
+        }
+        return null
+    }
+
+    private fun injectCorsHeaders(response: WebResourceResponse) {
+        val headers = response.responseHeaders?.toMutableMap() ?: mutableMapOf()
+        headers["Access-Control-Allow-Origin"] = "*"
+        headers["Access-Control-Allow-Methods"] = "GET, OPTIONS, HEAD"
+        headers["Access-Control-Allow-Headers"] = "*"
+        response.responseHeaders = headers
+    }
+
+    private fun getMimeType(fileName: String): String {
+        return when {
+            fileName.endsWith(".html") -> "text/html"
+            fileName.endsWith(".js") -> "application/javascript"
+            fileName.endsWith(".css") -> "text/css"
+            fileName.endsWith(".json") -> "application/json"
+            fileName.endsWith(".svg") -> "image/svg+xml"
+            fileName.endsWith(".png") -> "image/png"
+            fileName.endsWith(".jpg") || fileName.endsWith(".jpeg") -> "image/jpeg"
+            fileName.endsWith(".csv") -> "text/csv"
+            else -> "application/octet-stream"
+        }
+    }
+
     private fun loadGatekeeper() {
         val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val useRemote = prefs.getBoolean(KEY_USE_REMOTE, false)
 
         if (useRemote) {
             val remoteUrl = prefs.getString(KEY_SERVER_URL, DEFAULT_REMOTE_URL) ?: DEFAULT_REMOTE_URL
-            Log.i(TAG, "Connecting to Gatekeeper Remote Server: $remoteUrl")
+            Log.i(TAG, "Loading remote server URL: $remoteUrl")
             webView.loadUrl(remoteUrl)
         } else {
             loadLocalAssets()
@@ -219,8 +295,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadLocalAssets() {
-        Log.i(TAG, "Loading Gatekeeper local assets: $LOCAL_ASSET_URL")
-        // Load through WebViewAssetLoader virtual origin
+        Log.i(TAG, "Loading local APK assets: $LOCAL_ASSET_URL")
         webView.loadUrl(LOCAL_ASSET_URL)
     }
 
